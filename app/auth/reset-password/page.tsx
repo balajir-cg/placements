@@ -1,54 +1,74 @@
 "use client"
 
 import type React from "react"
-import { useState, FormEvent } from "react"
-import { Mail, KeyRound, UserRound } from "lucide-react"
+import { useState, FormEvent, useEffect } from "react"
+import { KeyRound } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-export default function SignUpPage() {
-  const [email, setEmail] = useState<string>('');
+export default function ResetPasswordPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const userId = searchParams.get('userId');
+  const secret = searchParams.get('secret');
+
   const [password, setPassword] = useState<string>('');
-  const [name, setName] = useState<string>('');
+  const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const router = useRouter();
 
-  const handleSignUp = async (event: FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!userId || !secret) {
+      setError('Invalid or missing reset token.');
+    }
+  }, [userId, secret]);
+
+  const handleResetPassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
     setSuccessMessage(null);
 
+    if (password !== confirmPassword) {
+      setError('Passwords do not match.');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!userId || !secret) {
+      setError('Invalid or missing reset token.');
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify({ userId, secret, password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to sign up');
+        throw new Error(data.error || 'Failed to reset password');
       }
 
-      setSuccessMessage(data.message || 'Signed up successfully!');
-      setEmail('');
+      setSuccessMessage(data.message || 'Your password has been reset successfully!');
       setPassword('');
-      setName('');
-      router.push('/sign-in'); // Redirect to sign-in page after successful registration
+      setConfirmPassword('');
+      router.push('/sign-in'); // Redirect to sign-in page after successful reset
     } catch (e: any) {
-      console.error("Sign up error:", e);
-      setError(e.message || 'Failed to sign up. Please try again.');
+      console.error("Reset password error:", e);
+      setError(e.message || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -62,15 +82,15 @@ export default function SignUpPage() {
             <Image src="/diverse-group-five.png" alt="Students collaborating" fill className="object-cover" />
             <div className="absolute inset-0 bg-primary/40"></div>
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
-              <h2 className="text-2xl font-bold">Join Our Community</h2>
-              <p className="mt-2">Sign up to start your placement journey</p>
+              <h2 className="text-2xl font-bold">Reset Your Password</h2>
+              <p className="mt-2">Enter your new password.</p>
             </div>
           </div>
 
           <div className="flex flex-col justify-center p-8">
             <div className="mb-8 text-center">
-              <h1 className="text-2xl font-bold">Sign Up</h1>
-              <p className="mt-2 text-muted-foreground">Create your account.</p>
+              <h1 className="text-2xl font-bold">Reset Password</h1>
+              <p className="mt-2 text-muted-foreground">Enter your new password below.</p>
             </div>
 
             {successMessage && (
@@ -84,41 +104,9 @@ export default function SignUpPage() {
               </div>
             )}
 
-            <form onSubmit={handleSignUp} className="space-y-4">
+            <form onSubmit={handleResetPassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <div className="relative">
-                  <UserRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="name" 
-                    type="text" 
-                    placeholder="John Doe" 
-                    className="pl-10" 
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">College Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="your.email@gct.ac.in" 
-                    className="pl-10" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required 
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">New Password</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input 
@@ -133,18 +121,30 @@ export default function SignUpPage() {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="confirm-password">Confirm New Password</Label>
+                <div className="relative">
+                  <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input 
+                    id="confirm-password" 
+                    type="password" 
+                    placeholder="********" 
+                    className="pl-10" 
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required 
+                  />
+                </div>
+              </div>
+
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing Up..." : "Sign Up"}
+                {isLoading ? "Resetting..." : "Reset Password"}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
-              By signing up, you agree to our Terms of Service.
-            </p>
-            <p className="mt-4 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
               <Link href="/sign-in" className="font-medium text-primary hover:underline">
-                Sign in
+                Back to Sign In
               </Link>
             </p>
           </div>
