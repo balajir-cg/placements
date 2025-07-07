@@ -135,7 +135,7 @@ export default function LandingPage() {
               <Button size="lg" variant="secondary" asChild>
                 <Link href="/sign-up">Create Account</Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-primary-foreground" asChild>
+              <Button size="lg" variant="secondary" asChild>
                 <Link href="/sign-in">Sign In</Link>
               </Button>
             </div>
