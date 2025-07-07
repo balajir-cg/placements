@@ -1,32 +1,63 @@
 "use client"
 
 import type React from "react"
+import { useState, FormEvent } from "react"
+// Remove direct Appwrite account imports if all auth logic is through API routes
+// import { account, ID } from \'@/lib/appwrite\'; 
+// import { AppwriteException } from \'appwrite\';
 
-import { useState } from "react"
-import { Eye, EyeOff, Lock, Mail, User } from "lucide-react"
+import { Mail } from "lucide-react" // Keep Mail, remove Eye, EyeOff, Lock, User for now
 import Image from "next/image"
 import Link from "next/link"
+// import Router from "next/router"; // Use next/navigation for App Router
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+// import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Remove select for Role for now
 
 export default function SignUpPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  // const [showPassword, setShowPassword] = useState(false) // Remove password state
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const [email, setEmail] = useState<string>('');
+  // const [otpSent, setOtpSent] = useState<boolean>(false); // Remove OTP state
+  // const [userId, setUserId] = useState<string | null>(null); 
+  // const [otp, setOtp] = useState<string>(\'\'); 
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-    // Simulate registration delay
-    setTimeout(() => {
-      setIsLoading(false)
-      window.location.href = "/discover"
-    }, 1500)
-  }
+  // Handle Email Submission for Magic Link
+  const handleMagicLinkRequest = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const response = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send magic link');
+      }
+
+      setSuccessMessage(data.message || `A magic link has been sent to ${email}. Please check your inbox.`);
+      setEmail(''); // Clear email field on success
+    } catch (e: any) {
+      console.error("Magic link request error:", e);
+      setError(e.message || 'Failed to send magic link. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -37,120 +68,58 @@ export default function SignUpPage() {
             <div className="absolute inset-0 bg-primary/40"></div>
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
               <h2 className="text-2xl font-bold">Join Our Community</h2>
-              <p className="mt-2">Create an account to start your placement journey</p>
+              <p className="mt-2">Sign up or sign in with your email to start your placement journey</p>
             </div>
           </div>
 
           <div className="flex flex-col justify-center p-8">
             <div className="mb-8 text-center">
-              <h1 className="text-2xl font-bold">Create an Account</h1>
-              <p className="mt-2 text-muted-foreground">Sign up to access placement opportunities</p>
+              <h1 className="text-2xl font-bold">Sign Up / Sign In</h1>
+              <p className="mt-2 text-muted-foreground">Enter your email to receive a magic link.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input id="firstName" placeholder="First Name" className="pl-10" required />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" placeholder="Last Name" required />
-                </div>
+            {successMessage && (
+              <div className="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-center text-sm text-green-700">
+                {successMessage}
               </div>
+            )}
+            {error && (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
+                {error}
+              </div>
+            )}
 
+            <form onSubmit={handleMagicLinkRequest} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">College Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input id="email" type="email" placeholder="your.email@college.edu" className="pl-10" required />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="department">Department</Label>
-                <Select required>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="cs">Computer Science</SelectItem>
-                    <SelectItem value="it">Information Technology</SelectItem>
-                    <SelectItem value="ece">Electronics & Communication</SelectItem>
-                    <SelectItem value="eee">Electrical Engineering</SelectItem>
-                    <SelectItem value="mech">Mechanical Engineering</SelectItem>
-                    <SelectItem value="civil">Civil Engineering</SelectItem>
-                    <SelectItem value="chem">Chemical Engineering</SelectItem>
-                    <SelectItem value="biotech">Biotechnology</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10 pr-10"
-                    required
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="your.email@gct.ac.in" 
+                    className="pl-10" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required 
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-                  </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Password must be at least 8 characters long</p>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating account..." : "Create Account"}
+                {isLoading ? "Sending link..." : "Send Magic Link"}
               </Button>
-
-              <p className="text-xs text-muted-foreground">
-                By signing up, you agree to our{" "}
-                <Link href="#" className="text-primary hover:underline">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="#" className="text-primary hover:underline">
-                  Privacy Policy
-                </Link>
-                .
-              </p>
             </form>
 
-            <div className="mt-6 flex items-center justify-center gap-2">
-              <Separator className="w-full" />
-              <span className="text-xs text-muted-foreground">OR</span>
-              <Separator className="w-full" />
-            </div>
-
-            <Button variant="outline" className="mt-6">
-              Sign up with College SSO
-            </Button>
-
             <p className="mt-6 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link href="/sign-in" className="font-medium text-primary hover:underline">
-                Sign in
-              </Link>
+              By signing up, you agree to our Terms of Service.
+            </p>
+            <p className="mt-4 text-center text-sm text-muted-foreground">
+              The same magic link will be used if you already have an account.
             </p>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

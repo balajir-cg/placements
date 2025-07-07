@@ -1,7 +1,7 @@
 import { ArrowRight, BookOpen, Briefcase, GraduationCap, Users } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
-
+import { MainNav } from "@/components/main-nav"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
@@ -9,7 +9,8 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-b from-primary/10 to-background py-20">
+      <section className="relative bg-gradient-to-b from-primary/10 to-background py-5">
+      <MainNav/>
         <div className="container px-4 sm:px-8">
           <div className="grid gap-8 md:grid-cols-2 md:items-center">
             <div className="space-y-6">

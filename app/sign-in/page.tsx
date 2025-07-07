@@ -1,31 +1,54 @@
 "use client"
 
 import type React from "react"
+import { useState, FormEvent } from "react"
 
-import { useState } from "react"
-import { Eye, EyeOff, Lock, Mail } from "lucide-react"
+import { Mail } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Separator } from "@/components/ui/separator"
 
 export default function SignInPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const [email, setEmail] = useState<string>('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const handleMagicLinkRequest = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setSuccessMessage(null);
 
-    // Simulate authentication delay
-    setTimeout(() => {
-      setIsLoading(false)
-      window.location.href = "/discover"
-    }, 1500)
-  }
+    try {
+      const response = await fetch('/api/auth/magic-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send magic link');
+      }
+
+      setSuccessMessage(data.message || `A magic link has been sent to ${email}. Please check your inbox.`);
+      setEmail(''); // Clear email field on success
+      // User will be redirected by clicking the link in their email.
+      // No client-side redirect here, just a message.
+    } catch (e: any) {
+      console.error("Magic link request error:", e);
+      setError(e.message || 'Failed to send magic link. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -36,68 +59,48 @@ export default function SignInPage() {
             <div className="absolute inset-0 bg-primary/40"></div>
             <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
               <h2 className="text-2xl font-bold">Welcome Back</h2>
-              <p className="mt-2">Sign in to continue your placement journey</p>
+              <p className="mt-2">Sign in with a magic link sent to your email.</p>
             </div>
           </div>
 
           <div className="flex flex-col justify-center p-8">
             <div className="mb-8 text-center">
               <h1 className="text-2xl font-bold">Sign In</h1>
-              <p className="mt-2 text-muted-foreground">Enter your credentials to access your account</p>
+              <p className="mt-2 text-muted-foreground">Enter your email to receive a login link.</p>
             </div>
+            
+            {successMessage && (
+              <div className="mb-4 rounded-md border border-green-200 bg-green-50 p-3 text-center text-sm text-green-700">
+                {successMessage}
+              </div>
+            )}
+            {error && (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-3 text-center text-sm text-red-700">
+                {error}
+              </div>
+            )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleMagicLinkRequest} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input id="email" type="email" placeholder="your.email@college.edu" className="pl-10" required />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
-                  <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    className="pl-10 pr-10"
-                    required
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    placeholder="your.email@xxx.com" 
+                    className="pl-10" 
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required 
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 text-muted-foreground"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
-                  </Button>
                 </div>
               </div>
 
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? "Sending link..." : "Send Magic Link"}
               </Button>
             </form>
-
-            <div className="mt-6 flex items-center justify-center gap-2">
-              <Separator className="w-full" />
-              <span className="text-xs text-muted-foreground">OR</span>
-              <Separator className="w-full" />
-            </div>
-
-            <Button variant="outline" className="mt-6">
-              Sign in with College SSO
-            </Button>
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
               Don't have an account?{" "}

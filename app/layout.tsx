@@ -2,13 +2,11 @@ import type React from "react"
 import "@/app/globals.css"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
-
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata = {
-  title: "DesignGallery - Discover Creative Work",
-  description: "Explore creative work from designers around the world",
-    generator: 'v0.dev'
+  title: "GCT Placemnets App",
+  description: "Preparing Students for Campus Placements"
 }
 
 export default function RootLayout({
