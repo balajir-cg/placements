@@ -1,12 +1,11 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { account, databases } from "@/lib/appwrite";
-import { ID } from "appwrite";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,12 +13,30 @@ import { Textarea } from "@/components/ui/textarea";
 import { MainNav } from "@/components/main-nav";
 import { UserNav } from "@/components/user-nav";
 
-export default function CreateBlogPostPage() {
+export default function EditBlogPostPage({ params }: { params: { id: string } }) {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const response = await databases.getDocument(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+          process.env.NEXT_PUBLIC_APPWRITE_BLOG_COLLECTION_ID!,
+          params.id
+        );
+        setTitle(response.title);
+        setContent(response.content);
+      } catch (e: any) {
+        setError(e.message);
+      }
+    };
+
+    fetchPost();
+  }, [params.id]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,20 +44,16 @@ export default function CreateBlogPostPage() {
     setError(null);
 
     try {
-      const user = await account.get();
-      await databases.createDocument(
+      await databases.updateDocument(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_BLOG_COLLECTION_ID!,
-        ID.unique(),
+        params.id,
         {
           title,
           content,
-          authorId: user.$id,
-          authorName: user.name,
-          createdAt: new Date().toISOString(),
         }
       );
-      router.push("/blog");
+      router.push(`/blog/${params.id}`);
     } catch (e: any) {
       setError(e.message);
     } finally {
@@ -62,14 +75,14 @@ export default function CreateBlogPostPage() {
         <div className="container px-4 py-6 sm:px-8 md:py-8">
           <div className="mb-6 flex items-center justify-between">
             <Button variant="ghost" size="sm" asChild>
-              <Link href="/blog">
+              <Link href={`/blog/${params.id}`}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Blog
+                Back to Post
               </Link>
             </Button>
             <Button type="submit" form="blog-form" disabled={isSubmitting}>
               <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "Publishing..." : "Publish"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
 
@@ -100,10 +113,10 @@ export default function CreateBlogPostPage() {
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" asChild>
-                <Link href="/blog">Cancel</Link>
+                <Link href={`/blog/${params.id}`}>Cancel</Link>
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Publishing..." : "Publish Post"}
+                {isSubmitting ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

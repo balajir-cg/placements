@@ -1,5 +1,8 @@
-import { Bell, Settings, LogOut } from "lucide-react"
+"use client";
+
+import { Bell, Settings, LogOut, User } from "lucide-react"
 import Link from "next/link"
+import { useRole } from "@/hooks/use-role";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -14,6 +17,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 
 export function UserNav() {
+  const { role } = useRole();
+
   return (
     <div className="flex items-center gap-4">
       <Button variant="ghost" size="icon" className="relative">
@@ -40,21 +45,19 @@ export function UserNav() {
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem>
-              <Link href="#" className="flex w-full items-center">
+              <Link href="/profiles" className="flex w-full items-center">
+                <User className="mr-2 h-4 w-4" />
                 Profile
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link href="#" className="flex w-full items-center">
-                Work
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Link href="#" className="flex w-full items-center">
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
-              </Link>
-            </DropdownMenuItem>
+            {role === 'admin' && (
+              <DropdownMenuItem>
+                <Link href="/admin/candidates" className="flex w-full items-center">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Admin</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem>

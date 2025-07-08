@@ -1,5 +1,10 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { Search, Briefcase, MapPin, Clock, DollarSign } from "lucide-react"
 import Link from "next/link"
+import { databases } from "@/lib/appwrite";
+import { useRole } from "@/hooks/use-role";
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +17,48 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AddJobDialog } from "@/components/add-job-dialog"
 
 export default function JobsPage() {
+  const { role, loading: roleLoading } = useRole();
+  const [jobs, setJobs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const response = await databases.listDocuments(
+          process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
+          process.env.NEXT_PUBLIC_APPWRITE_JOBS_COLLECTION_ID!
+        );
+        setJobs(response.documents);
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (role === 'admin') {
+      fetchJobs();
+    }
+  }, [role]);
+
+  if (roleLoading || loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (role !== 'admin') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <h1 className="text-3xl font-bold">Access Denied</h1>
+        <p className="text-muted-foreground">You do not have permission to view this page.</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background">
@@ -157,7 +204,7 @@ export default function JobsPage() {
 
             <div className="space-y-6">
               <div className="flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Showing 24 jobs</p>
+                <p className="text-sm text-muted-foreground">Showing {jobs.length} jobs</p>
                 <div className="flex items-center gap-2">
                   <Select defaultValue="newest">
                     <SelectTrigger className="w-[180px]">
@@ -174,17 +221,17 @@ export default function JobsPage() {
 
               <div className="space-y-4">
                 {jobs.map((job) => (
-                  <Link href={`/jobs/${job.id}`} key={job.id}>
+                  <Link href={`/jobs/${job.$id}`} key={job.$id}>
                     <Card className="hover:border-primary/50 hover:shadow-sm">
                       <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
-                            <AvatarImage src={job.company.logo || "/placeholder.svg"} alt={job.company.name} />
-                            <AvatarFallback>{job.company.name.charAt(0)}</AvatarFallback>
+                            <AvatarImage src={job.companyLogo || "/placeholder.svg"} alt={job.companyName} />
+                            <AvatarFallback>{job.companyName.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div>
                             <h3 className="font-semibold">{job.title}</h3>
-                            <p className="text-sm text-muted-foreground">{job.company.name}</p>
+                            <p className="text-sm text-muted-foreground">{job.companyName}</p>
                           </div>
                         </div>
                         <Badge variant={job.type === "Full-time" ? "default" : "outline"}>{job.type}</Badge>
@@ -212,7 +259,7 @@ export default function JobsPage() {
                       </CardContent>
                       <CardContent className="pt-2">
                         <div className="flex flex-wrap gap-2">
-                          {job.skills.map((skill) => (
+                          {job.skills.map((skill: string) => (
                             <Badge key={skill} variant="secondary" className="font-normal">
                               {skill}
                             </Badge>
@@ -250,86 +297,3 @@ export default function JobsPage() {
     </div>
   )
 }
-
-const jobs = [
-  {
-    id: "1",
-    title: "Senior UI/UX Designer",
-    company: {
-      name: "Designify",
-      logo: "/diverse-group.png",
-    },
-    type: "Full-time",
-    location: "Remote",
-    level: "Senior Level",
-    salary: "₹90k - ₹120k",
-    posted: "2 days ago",
-    description:
-      "We're looking for a Senior UI/UX Designer to join our team and help create exceptional user experiences for our products. You'll work closely with product managers, developers, and other designers.",
-    skills: ["Figma", "UI Design", "User Research", "Prototyping"],
-  },
-  {
-    id: "2",
-    title: "Product Designer",
-    company: {
-      name: "TechVision",
-      logo: "/diverse-group-two.png",
-    },
-    type: "Full-time",
-    location: "San Francisco, CA (Hybrid)",
-    level: "Mid Level",
-    salary: "₹80k - ₹100k",
-    posted: "3 days ago",
-    description:
-      "Join our product design team to create intuitive and engaging experiences for our SaaS platform. You'll be involved in the entire product development lifecycle from research to implementation.",
-    skills: ["Product Design", "Design Systems", "Wireframing", "User Testing"],
-  },
-  {
-    id: "3",
-    title: "Graphic Designer",
-    company: {
-      name: "Creative Studio",
-      logo: "/diverse-group-outdoors.png",
-    },
-    type: "Contract",
-    location: "Remote",
-    level: "Mid Level",
-    salary: "₹50 - ₹65/hour",
-    posted: "1 week ago",
-    description:
-      "We're seeking a talented Graphic Designer for a 6-month contract to help with our rebranding project. You'll create visual assets for both print and digital platforms.",
-    skills: ["Adobe Creative Suite", "Branding", "Typography", "Illustration"],
-  },
-  {
-    id: "4",
-    title: "Motion Designer",
-    company: {
-      name: "AnimateX",
-      logo: "/diverse-group-four.png",
-    },
-    type: "Full-time",
-    location: "New York, NY",
-    level: "Mid-Senior Level",
-    salary: "₹85k - ₹110k",
-    posted: "5 days ago",
-    description:
-      "Create engaging motion graphics and animations for our clients' digital marketing campaigns. You'll work with a team of designers and marketers to bring static designs to life.",
-    skills: ["After Effects", "Cinema 4D", "Animation", "Storyboarding"],
-  },
-  {
-    id: "5",
-    title: "Junior UX Designer",
-    company: {
-      name: "StartupLabs",
-      logo: "/diverse-group-five.png",
-    },
-    type: "Full-time",
-    location: "Austin, TX (Hybrid)",
-    level: "Entry Level",
-    salary: "₹60k - ₹75k",
-    posted: "1 day ago",
-    description:
-      "Great opportunity for a Junior UX Designer to join our growing team. You'll learn from experienced designers while contributing to real projects for our clients in the healthcare industry.",
-    skills: ["Wireframing", "User Research", "Figma", "UI Design"],
-  },
-]
