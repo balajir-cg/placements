@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { account } from '@/lib/appwrite';
-import { databasesServer } from '@/lib/appwrite-server';
-import { ID } from 'appwrite';
+import { Client, Databases, ID } from 'appwrite';
 
 export async function POST(request: NextRequest) {
+  const serverClient = new Client()
+    .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+    .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!);
+
+  if (process.env.APPWRITE_API_KEY) {
+    serverClient.setHeaders({
+      'X-Appwrite-Key': process.env.APPWRITE_API_KEY,
+    });
+  }
+
+  const serverDatabases = new Databases(serverClient);
+
   try {
     const { email, password, name, role } = await request.json();
 
@@ -29,7 +40,7 @@ export async function POST(request: NextRequest) {
     const userId = user.$id;
 
     try {
-      await databasesServer.createDocument(
+      await serverDatabases.createDocument(
         process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!,
         process.env.NEXT_PUBLIC_APPWRITE_USERS_COLLECTION_ID!,
         ID.unique(),
